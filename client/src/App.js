@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import DataDisplay from './components/DataDisplay';
 
+// Define the backend URL dynamically from the environment variable
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
+
 function App() {
     const [poolAddress, setPoolAddress] = useState('');
     const [poolData, setPoolData] = useState(null);
@@ -19,7 +22,8 @@ function App() {
 
         try {
             const encodedAddress = encodeURIComponent(poolAddress.trim().toLowerCase());
-            const response = await fetch(`/api/get-pool-info?address=${encodedAddress}`);
+            // Use the API_BASE_URL to make the request
+            const response = await fetch(`${API_BASE_URL}/api/get-pool-info?address=${encodedAddress}`);
             const data = await response.json();
 
             if (response.ok) {

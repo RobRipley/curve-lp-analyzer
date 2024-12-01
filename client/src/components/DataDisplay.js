@@ -1,6 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-function DataDisplay({ poolData }) {
+// Define your backend URL dynamically from environment variables
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
+
+function DataDisplay({ poolId }) {
+    const [poolData, setPoolData] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        // Fetch pool data when the component mounts or `poolId` changes
+        async function fetchPoolData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/get-pool-info?address=${poolId}`);
+                if (!response.ok) {
+                    throw new Error(`Error fetching data: ${response.statusText}`);
+                }
+                const data = await response.json();
+                setPoolData(data);
+            } catch (err) {
+                setError(err.message);
+            }
+        }
+
+        if (poolId) {
+            fetchPoolData();
+        }
+    }, [poolId]);
+
     const [showFullAddress, setShowFullAddress] = useState({});
 
     const formatNumber = (num) => {
@@ -27,9 +53,9 @@ function DataDisplay({ poolData }) {
     };
 
     const toggleAddress = (id) => {
-        setShowFullAddress(prev => ({
+        setShowFullAddress((prev) => ({
             ...prev,
-            [id]: !prev[id]
+            [id]: !prev[id],
         }));
     };
 
@@ -37,15 +63,22 @@ function DataDisplay({ poolData }) {
         return new Date(dateString).toLocaleString();
     };
 
-    // Calculate actual token percentages based on USD values
     const calculateTokenPercentage = (tokenValueUSD) => {
-        const totalValue = parseFloat(poolData.metrics.tvl);
+        const totalValue = parseFloat(poolData?.metrics?.tvl || 0);
         return parseFloat(tokenValueUSD) / totalValue;
     };
 
     const calculatePositionPercentage = (positionUSD) => {
-        return parseFloat(positionUSD) / parseFloat(poolData.metrics.tvl);
+        return parseFloat(positionUSD) / parseFloat(poolData?.metrics?.tvl || 1);
     };
+
+    if (error) {
+        return <div className="p-4 max-w-7xl mx-auto text-red-600">Error: {error}</div>;
+    }
+
+    if (!poolData) {
+        return <div className="p-4 max-w-7xl mx-auto">Loading pool data...</div>;
+    }
 
     return (
         <div className="p-4 max-w-7xl mx-auto">
@@ -59,7 +92,11 @@ function DataDisplay({ poolData }) {
                     <div className="text-xl">
                         <span className="font-semibold">TVL: </span>
                         <span>${formatNumber(poolData.metrics.tvl)} </span>
-                        <span className={`ml-2 ${parseFloat(poolData.metrics.tvlChange) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span
+                            className={`ml-2 ${
+                                parseFloat(poolData.metrics.tvlChange) >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}
+                        >
                             ({poolData.metrics.tvlChange})
                         </span>
                     </div>
