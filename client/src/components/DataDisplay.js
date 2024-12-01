@@ -43,7 +43,7 @@ function DataDisplay({ poolData }) {
             };
 
             provider.totalDeposited += parseFloat(tx.amountUSD);
-            provider.lastActive = Math.max(provider.lastActive, parseInt(tx.blockTimestamp));
+            provider.lastActive = Math.max(provider.lastActive, parseInt(tx.timestamp));
             provider.transactions += 1;
             providerMap.set(tx.from, provider);
         });
@@ -59,7 +59,7 @@ function DataDisplay({ poolData }) {
             };
 
             provider.totalWithdrawn += parseFloat(tx.amountUSD);
-            provider.lastActive = Math.max(provider.lastActive, parseInt(tx.blockTimestamp));
+            provider.lastActive = Math.max(provider.lastActive, parseInt(tx.timestamp));
             provider.transactions += 1;
             providerMap.set(tx.from, provider);
         });
@@ -80,22 +80,26 @@ function DataDisplay({ poolData }) {
             <div className="bg-white rounded-lg shadow-sm mb-8 p-6">
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold mb-2">{poolData.name || 'Pool Name Not Available'}</h2>
-                    <p className="text-lg">Symbol: {poolData.symbol}</p>
-                    <p className="text-lg">Pool Type: {poolData._isMetapool ? 'Metapool' : 'Regular Pool'}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-lg">Symbol: {poolData.symbol}</p>
+                            <p className="text-lg">Pool Type: {poolData._isMetapool ? 'Metapool' : 'Regular Pool'}</p>
+                        </div>
+                        <div>
+                            <p className="text-lg">Daily Volume: ${formatNumber(poolData.dailySnapshots[0]?.dailyVolumeUSD)}</p>
+                            <p className="text-lg">TVL: ${formatNumber(poolData.totalValueLockedUSD)}</p>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Pool Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="bg-gray-50 p-4 rounded">
-                        <h3 className="text-lg font-medium mb-2">Overview</h3>
-                        <p className="mb-2">TVL: ${formatNumber(poolData.totalValueLockedUSD)}</p>
-                        <p>Volume: ${formatNumber(poolData.cumulativeVolumeUSD)}</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded">
-                        <h3 className="text-lg font-medium mb-2">Revenue</h3>
-                        <p className="mb-2">Supply Side: ${formatNumber(poolData.cumulativeSupplySideRevenueUSD)}</p>
-                        <p>Protocol Side: ${formatNumber(poolData.cumulativeProtocolSideRevenueUSD)}</p>
-                    </div>
+                {/* Fee Information */}
+                <div className="bg-gray-50 p-4 rounded mb-6">
+                    <h3 className="text-lg font-medium mb-2">Fees</h3>
+                    {poolData.fees.map((fee, index) => (
+                        <p key={index} className="text-sm">
+                            {fee.feeType}: {formatNumber(parseFloat(fee.feePercentage) * 100, 3)}%
+                        </p>
+                    ))}
                 </div>
 
                 {/* Token Table */}
@@ -134,9 +138,9 @@ function DataDisplay({ poolData }) {
                 </div>
 
                 {/* Top Providers Section */}
-                <div className="mt-8">
-                    <h3 className="text-xl font-semibold mb-4">Top 20 Liquidity Providers</h3>
-                    {topProviders.length > 0 ? (
+                {topProviders.length > 0 ? (
+                    <div className="mt-8">
+                        <h3 className="text-xl font-semibold mb-4">Top 20 Liquidity Providers</h3>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -150,7 +154,7 @@ function DataDisplay({ poolData }) {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {topProviders.map((provider, index) => (
+                                    {topProviders.map((provider) => (
                                         <tr key={provider.address}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {formatAddress(provider.address)}
@@ -175,17 +179,13 @@ function DataDisplay({ poolData }) {
                                 </tbody>
                             </table>
                         </div>
-                    ) : (
-                        <div className="text-gray-500 bg-gray-50 rounded p-4">
-                            No liquidity provider data available for this pool yet. This might be because:
-                            <ul className="list-disc ml-5 mt-2">
-                                <li>The pool is new</li>
-                                <li>The data is still being indexed</li>
-                                <li>This pool type's data might be stored differently</li>
-                            </ul>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div className="mt-8 bg-gray-50 p-4 rounded">
+                        <h3 className="text-xl font-semibold mb-4">Top 20 Liquidity Providers</h3>
+                        <p className="text-gray-600">No liquidity provider data available for this pool.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
