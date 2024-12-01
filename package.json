@@ -1,9 +1,10 @@
 {
   "name": "curve-lp-analyzer",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Curve Pool Data Analyzer",
+  "main": "api/index.js",
   "scripts": {
+    "start": "node api/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,6 +13,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "ethers": "^6.13.4",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "graphql-request": "^5.1.0"
   }
 }
