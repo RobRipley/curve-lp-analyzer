@@ -46,50 +46,30 @@ const query = gql`
                 totalValueLockedUSD
                 timestamp
             }
-            # Enhanced deposits query with block timestamp
             deposits(
                 first: 1000
-                orderBy: blockTimestamp
+                orderBy: timestamp
                 orderDirection: desc
             ) {
                 from
                 amountUSD
-                blockTimestamp
-                hash
-                logIndex
+                timestamp
             }
-            # Enhanced withdraws query with block timestamp
             withdraws(
                 first: 1000
-                orderBy: blockTimestamp
+                orderBy: timestamp
                 orderDirection: desc
             ) {
                 from
                 amountUSD
-                blockTimestamp
-                hash
-                logIndex
-            }
-            # Add positions if available
-            positions(
-                first: 1000
-                orderBy: liquidityTokenBalance
-                orderDirection: desc
-            ) {
-                id
-                account {
-                    id
-                }
-                liquidityTokenBalance
-                withdrawnTokenAmounts
-                depositedTokenAmounts
+                timestamp
             }
         }
     }
 `;
 
 module.exports = async (req, res) => {
-    // Enable CORS
+    // CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -98,13 +78,11 @@ module.exports = async (req, res) => {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Handle OPTIONS request
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
-    // Only allow GET requests
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -122,11 +100,6 @@ module.exports = async (req, res) => {
         if (!data.liquidityPool) {
             return res.status(404).json({ error: 'Pool not found' });
         }
-
-        // Add debug logging
-        console.log("Deposits count:", data.liquidityPool.deposits?.length);
-        console.log("Withdraws count:", data.liquidityPool.withdraws?.length);
-        console.log("Positions count:", data.liquidityPool.positions?.length);
 
         return res.status(200).json(data.liquidityPool);
     } catch (error) {
