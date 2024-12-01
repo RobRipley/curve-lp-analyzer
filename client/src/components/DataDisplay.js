@@ -15,11 +15,6 @@ function DataDisplay({ poolData }) {
         return balance / Math.pow(10, decimals);
     };
 
-    const formatAddress = (address) => {
-        if (!address) return '';
-        return `${address.slice(0, 6)}...${address.slice(-4)}`;
-    };
-
     const formatDate = (timestamp) => {
         return new Date(parseInt(timestamp) * 1000).toLocaleString();
     };
@@ -156,8 +151,8 @@ function DataDisplay({ poolData }) {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {topProviders.map((provider) => (
                                         <tr key={provider.address}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatAddress(provider.address)}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                                                {provider.address}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
                                                 ${formatNumber(provider.netPosition)}
