@@ -22,20 +22,13 @@ function App() {
 
         try {
             const encodedAddress = encodeURIComponent(poolAddress.trim().toLowerCase());
-            // Updated endpoint path to match new Vercel serverless function
-            const response = await fetch(`${API_BASE_URL}/get-pool-info?address=${encodedAddress}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
-
+            const response = await fetch(`${API_BASE_URL}/get-pool-info?address=${encodedAddress}`);
             const data = await response.json();
 
             if (response.ok) {
+                console.log("Received data:", data); // Debug log
                 setPoolData(data);
             } else {
-                // Enhanced error handling with more specific messages
                 if (response.status === 404) {
                     throw new Error('Pool not found. Please verify the address and try again.');
                 } else if (response.status === 400) {
@@ -45,6 +38,7 @@ function App() {
                 }
             }
         } catch (err) {
+            console.error("Fetch error:", err); // Debug log
             if (err.name === 'TypeError' && err.message.includes('fetch')) {
                 setError(`Network error: Unable to connect to the server. Please check your connection and try again.`);
             } else {
@@ -104,13 +98,19 @@ function App() {
                 </div>
             )}
             
+            {isLoading && (
+                <div className="p-4 mb-6 bg-blue-50 border border-blue-200 text-blue-600 rounded">
+                    Loading pool data...
+                </div>
+            )}
+            
             {!error && !poolData && !isLoading && (
                 <div className="p-4 mb-6 bg-blue-50 border border-blue-200 text-blue-600 rounded">
                     Enter a Curve Finance pool address above to view its data
                 </div>
             )}
             
-            {poolData && <DataDisplay poolData={poolData} />}
+            {poolData && !isLoading && <DataDisplay poolData={poolData} />}
         </div>
     );
 }
