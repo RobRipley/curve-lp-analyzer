@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-// Define your backend URL dynamically from environment variables
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5001';
 
 function DataDisplay({ poolId }) {
@@ -8,10 +7,9 @@ function DataDisplay({ poolId }) {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Fetch pool data when the component mounts or `poolId` changes
         async function fetchPoolData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/get-pool-info?address=${poolId}`);
+                const response = await fetch(`${API_BASE_URL}/get-pool-info?address=${poolId}`);
                 if (!response.ok) {
                     throw new Error(`Error fetching data: ${response.statusText}`);
                 }
@@ -27,49 +25,16 @@ function DataDisplay({ poolId }) {
         }
     }, [poolId]);
 
-    const [showFullAddress, setShowFullAddress] = useState({});
-
-    const formatNumber = (num) => {
+    const formatNumber = (num, decimals = 2) => {
         return new Intl.NumberFormat('en-US', {
             style: 'decimal',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(num);
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
+        }).format(parseFloat(num));
     };
 
-    const formatPercent = (num) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'percent',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(num);
-    };
-
-    const formatAddress = (address, id) => {
-        if (showFullAddress[id]) {
-            return address;
-        }
-        return `${address.slice(0, 6)}...${address.slice(-4)}`;
-    };
-
-    const toggleAddress = (id) => {
-        setShowFullAddress((prev) => ({
-            ...prev,
-            [id]: !prev[id],
-        }));
-    };
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString();
-    };
-
-    const calculateTokenPercentage = (tokenValueUSD) => {
-        const totalValue = parseFloat(poolData?.metrics?.tvl || 0);
-        return parseFloat(tokenValueUSD) / totalValue;
-    };
-
-    const calculatePositionPercentage = (positionUSD) => {
-        return parseFloat(positionUSD) / parseFloat(poolData?.metrics?.tvl || 1);
+    const formatDate = (timestamp) => {
+        return new Date(timestamp * 1000).toLocaleString();
     };
 
     if (error) {
@@ -86,90 +51,87 @@ function DataDisplay({ poolId }) {
             <div className="bg-white rounded-lg shadow-sm mb-8 p-6">
                 <div className="mb-6">
                     <div className="mb-4">
-                        <h2 className="text-2xl font-bold mb-2">{poolData.poolName}</h2>
-                        <p className="text-lg">Pool Type: {poolData.isMetapool ? 'Metapool' : 'Regular Pool'}</p>
+                        <h2 className="text-2xl font-bold mb-2">{poolData.name || 'Pool Name Not Available'}</h2>
+                        <p className="text-lg">Symbol: {poolData.symbol}</p>
+                        <p className="text-lg">Pool Type: {poolData._isMetapool ? 'Metapool' : 'Regular Pool'}</p>
                     </div>
                     <div className="text-xl">
-                        <span className="font-semibold">TVL: </span>
-                        <span>${formatNumber(poolData.metrics.tvl)} </span>
-                        <span
-                            className={`ml-2 ${
-                                parseFloat(poolData.metrics.tvlChange) >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}
-                        >
-                            ({poolData.metrics.tvlChange})
-                        </span>
+                        <div>
+                            <span className="font-semibold">Total Value Locked: </span>
+                            <span>${formatNumber(poolData.totalValueLockedUSD)}</span>
+                        </div>
+                        <div>
+                            <span className="font-semibold">Cumulative Volume: </span>
+                            <span>${formatNumber(poolData.cumulativeVolumeUSD)}</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Token Table */}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto mt-6">
+                    <h3 className="text-xl font-semibold mb-4">Pool Tokens</h3>
                     <table className="min-w-full">
                         <thead>
                             <tr className="bg-gray-50">
                                 <th className="px-6 py-3 text-left text-sm font-semibold">Token</th>
                                 <th className="px-6 py-3 text-right text-sm font-semibold">Balance</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Token Price</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Value</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">% of Pool</th>
+                                <th className="px-6 py-3 text-right text-sm font-semibold">Price (USD)</th>
+                                <th className="px-6 py-3 text-right text-sm font-semibold">Weight</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {poolData.tokens.map((token, index) => (
+                            {poolData.inputTokens.map((token, index) => (
                                 <tr key={index} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 text-sm font-medium">{token.symbol}</td>
-                                    <td className="px-6 py-4 text-right text-sm">{formatNumber(token.balance)}</td>
-                                    <td className="px-6 py-4 text-right text-sm">${formatNumber(token.priceUSD)}</td>
-                                    <td className="px-6 py-4 text-right text-sm">${formatNumber(token.valueUSD)}</td>
                                     <td className="px-6 py-4 text-right text-sm">
-                                        {formatPercent(calculateTokenPercentage(token.valueUSD))}
+                                        {formatNumber(poolData.inputTokenBalances[index], token.decimals)}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm">
+                                        ${formatNumber(token.lastPriceUSD)}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm">
+                                        {poolData.inputTokenWeights ? 
+                                            formatNumber(poolData.inputTokenWeights[index] * 100) + '%' 
+                                            : 'N/A'}
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            {/* Top Liquidity Providers Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-xl font-semibold mb-4">Top 20 Liquidity Providers</h3>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead>
-                            <tr className="bg-gray-50">
-                                <th className="px-6 py-3 text-left text-sm font-semibold">Provider Address</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Net Position (USD)</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">% of Pool</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Total Deposited</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Total Withdrawn</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Transactions</th>
-                                <th className="px-6 py-3 text-right text-sm font-semibold">Last Active</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {poolData.topProviders.map((provider, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 text-sm">
-                                        <button
-                                            onClick={() => toggleAddress(index)}
-                                            className="text-blue-600 hover:text-blue-800"
-                                        >
-                                            {formatAddress(provider.address, index)}
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-sm">${formatNumber(provider.netPositionUSD)}</td>
-                                    <td className="px-6 py-4 text-right text-sm">
-                                        {formatPercent(calculatePositionPercentage(provider.netPositionUSD))}
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-sm">${formatNumber(provider.totalDeposited)}</td>
-                                    <td className="px-6 py-4 text-right text-sm">${formatNumber(provider.totalWithdrawn)}</td>
-                                    <td className="px-6 py-4 text-right text-sm">{provider.transactions}</td>
-                                    <td className="px-6 py-4 text-right text-sm">{formatDate(provider.lastActive)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Recent Activity */}
+                <div className="mt-8">
+                    <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Daily Snapshots */}
+                        <div>
+                            <h4 className="text-lg font-medium mb-3">Daily Statistics</h4>
+                            <div className="bg-gray-50 p-4 rounded">
+                                {poolData.dailySnapshots.map((snapshot, index) => (
+                                    <div key={index} className="mb-2">
+                                        <p>Date: {formatDate(snapshot.timestamp)}</p>
+                                        <p>Volume: ${formatNumber(snapshot.dailyVolumeUSD)}</p>
+                                        <p>TVL: ${formatNumber(snapshot.totalValueLockedUSD)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Fee Information */}
+                        <div>
+                            <h4 className="text-lg font-medium mb-3">Fee Information</h4>
+                            <div className="bg-gray-50 p-4 rounded">
+                                <p>Supply Side Revenue: ${formatNumber(poolData.cumulativeSupplySideRevenueUSD)}</p>
+                                <p>Protocol Side Revenue: ${formatNumber(poolData.cumulativeProtocolSideRevenueUSD)}</p>
+                                {poolData.fees && poolData.fees.map((fee, index) => (
+                                    <p key={index}>
+                                        {fee.feeType}: {formatNumber(fee.feePercentage * 100)}%
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
