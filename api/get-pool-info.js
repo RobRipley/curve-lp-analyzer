@@ -46,23 +46,43 @@ const query = gql`
                 totalValueLockedUSD
                 timestamp
             }
+            # Enhanced deposits query with block timestamp
             deposits(
                 first: 1000
-                orderBy: timestamp
+                orderBy: blockTimestamp
                 orderDirection: desc
             ) {
                 from
                 amountUSD
-                timestamp
+                blockTimestamp
+                hash
+                logIndex
             }
+            # Enhanced withdraws query with block timestamp
             withdraws(
                 first: 1000
-                orderBy: timestamp
+                orderBy: blockTimestamp
                 orderDirection: desc
             ) {
                 from
                 amountUSD
-                timestamp
+                blockTimestamp
+                hash
+                logIndex
+            }
+            # Add positions if available
+            positions(
+                first: 1000
+                orderBy: liquidityTokenBalance
+                orderDirection: desc
+            ) {
+                id
+                account {
+                    id
+                }
+                liquidityTokenBalance
+                withdrawnTokenAmounts
+                depositedTokenAmounts
             }
         }
     }
@@ -102,6 +122,11 @@ module.exports = async (req, res) => {
         if (!data.liquidityPool) {
             return res.status(404).json({ error: 'Pool not found' });
         }
+
+        // Add debug logging
+        console.log("Deposits count:", data.liquidityPool.deposits?.length);
+        console.log("Withdraws count:", data.liquidityPool.withdraws?.length);
+        console.log("Positions count:", data.liquidityPool.positions?.length);
 
         return res.status(200).json(data.liquidityPool);
     } catch (error) {
