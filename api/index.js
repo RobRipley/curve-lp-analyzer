@@ -12,10 +12,17 @@ let client;
         gql = graphqlRequest.gql;
         GraphQLClient = graphqlRequest.GraphQLClient;
 
-        // Initialize the GraphQL client with The Graph's endpoint, using an environment variable for the API key
+        // Initialize the GraphQL client with The Graph's endpoint
         const API_KEY = process.env.GRAPH_API_KEY;
-        const SUBGRAPH_ID = '3fy93eAT56UJsRCEht8iFhfi6wjHWXtZ9dnnbQmvFopF';
+        const SUBGRAPH_ID = process.env.SUBGRAPH_ID;
+
+        if (!API_KEY || !SUBGRAPH_ID) {
+            console.error("Missing required environment variables: GRAPH_API_KEY or SUBGRAPH_ID");
+            return;
+        }
+
         client = new GraphQLClient(`https://gateway.thegraph.com/api/${API_KEY}/subgraphs/id/${SUBGRAPH_ID}`);
+        console.log("GraphQL client initialized successfully");
     } catch (error) {
         console.error("Error loading graphql-request:", error);
     }
@@ -26,6 +33,7 @@ app.use(express.json());
 // Middleware to ensure the GraphQL client is initialized
 app.use((req, res, next) => {
     if (!client) {
+        console.error("GraphQL client not initialized");
         return res.status(500).json({ error: 'GraphQL client not initialized' });
     }
     next();
@@ -104,6 +112,12 @@ app.get('/api/get-pool-info', async (req, res) => {
         console.error("Error fetching data from The Graph:", error.response ? error.response : error);
         res.status(500).json({ error: 'Error fetching data from The Graph', details: error.message });
     }
+});
+
+// Start the server and listen on the defined port
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
 
 // Export the app for Vercel
